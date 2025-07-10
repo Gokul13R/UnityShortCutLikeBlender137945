@@ -5,8 +5,12 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class BlenderViewShortcuts
 {
-    static Vector3 lastDirection = Vector3.zero;
-    static Vector3 lastUp = Vector3.up;
+    static Vector3 view0Direction = Vector3.zero;
+    static Vector3 view0Up = Vector3.up;
+    static bool view0Ortho = false;
+    static bool hasSavedView0 = false;
+    static Vector3 view0Pivot;
+    static float view0Size;
 
     static BlenderViewShortcuts()
     {
@@ -18,49 +22,72 @@ public static class BlenderViewShortcuts
         Event e = Event.current;
         if (e.type != EventType.KeyDown) return;
 
-        void StoreCurrentView()
+        void SaveView0()
         {
-            lastDirection = sceneView.camera.transform.forward;
-            lastUp = sceneView.camera.transform.up;
+            if (!hasSavedView0)
+            {
+                view0Direction = sceneView.camera.transform.forward;
+                view0Up = sceneView.camera.transform.up;
+                view0Ortho = sceneView.orthographic;
+                view0Pivot = sceneView.pivot;
+                view0Size = sceneView.size;
+                hasSavedView0 = true;
+            }
         }
+
+        //void FocusOnSelection(SceneView sv)
+        //{
+        //    if (Selection.activeTransform != null)
+        //    {
+        //       sv.pivot = Selection.activeTransform.position;
+        //      sv.size = 5f; // Adjust zoom level if needed
+        //    }
+        //}
 
         switch (e.keyCode)
         {
-            case KeyCode.Keypad1: // Front view (Z+)
-                StoreCurrentView();
-                SetSceneViewDirection(Vector3.back, Vector3.up); // Looking from Z+ toward origin
+            case KeyCode.Keypad1: // Front (Z+)
+                SaveView0();
+                SetSceneViewDirection(Vector3.back, Vector3.up, focus: true);
                 e.Use();
                 break;
 
-            case KeyCode.Keypad3: // Right view (X+)
-                StoreCurrentView();
-                SetSceneViewDirection(Vector3.left, Vector3.up); // Looking from X+ toward origin
+            case KeyCode.Keypad3: // Right (X+)
+                SaveView0();
+                SetSceneViewDirection(Vector3.left, Vector3.up, focus: true);
                 e.Use();
                 break;
 
-            case KeyCode.Keypad7: // Top view (Y+)
-                StoreCurrentView();
-                SetSceneViewDirection(Vector3.down, Vector3.forward); // Looking from Y+ downward
+            case KeyCode.Keypad7: // Top (Y+)
+                SaveView0();
+                SetSceneViewDirection(Vector3.down, Vector3.forward, focus: true);
                 e.Use();
                 break;
 
-            case KeyCode.Keypad9: // Opposite view
-                StoreCurrentView();
+            case KeyCode.Keypad9: // Opposite of current view
+                SaveView0();
                 Vector3 currentDir = sceneView.camera.transform.forward;
                 Vector3 currentUp = sceneView.camera.transform.up;
-                SetSceneViewDirection(-currentDir, currentUp);
+                SetSceneViewDirection(-currentDir, currentUp, focus: true);
                 e.Use();
                 break;
 
-            case KeyCode.Keypad5: // Last view
-                if (lastDirection != Vector3.zero)
+            case KeyCode.Keypad5: // Return to view 0
+                if (hasSavedView0)
                 {
-                    SetSceneViewDirection(lastDirection, lastUp);
-                    e.Use();
+                    SceneView sv = SceneView.lastActiveSceneView;
+                    if (sv != null)
+                    {
+                        sv.orthographic = view0Ortho;
+                        sv.LookAt(view0Pivot, Quaternion.LookRotation(view0Direction, view0Up), view0Size);
+                        sv.Repaint();
+                        hasSavedView0 = false;
+                        e.Use();
+                    }
                 }
                 break;
 
-            case KeyCode.Keypad4: // Toggle Orthographic
+            case KeyCode.Keypad4: // Toggle Ortho
                 sceneView.orthographic = !sceneView.orthographic;
                 sceneView.Repaint();
                 e.Use();
@@ -68,13 +95,19 @@ public static class BlenderViewShortcuts
         }
     }
 
-    static void SetSceneViewDirection(Vector3 direction, Vector3 up)
+    static void SetSceneViewDirection(Vector3 direction, Vector3 up, bool focus)
     {
-        SceneView sceneView = SceneView.lastActiveSceneView;
-        if (sceneView == null) return;
+        SceneView sv = SceneView.lastActiveSceneView;
+        if (sv == null) return;
 
-        sceneView.LookAt(sceneView.pivot, Quaternion.LookRotation(direction, up), sceneView.size);
-        sceneView.Repaint();
+        if (focus && Selection.activeTransform != null)
+        {
+            sv.pivot = Selection.activeTransform.position;
+            sv.size = 5f; // You can adjust zoom level here
+        }
+
+        sv.LookAt(sv.pivot, Quaternion.LookRotation(direction, up), sv.size);
+        sv.Repaint();
     }
 }
 #endif
