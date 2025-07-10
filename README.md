@@ -1,5 +1,5 @@
 
-blender view
+blender view only for scean view 
 
 | Numpad Key | View          | Direction     |
 | ---------- | ------------- | ------------- |
@@ -9,3 +9,6 @@ blender view
 | `9`        | Opposite View | Reverses view |
 | `5`        | Previous View | Goes back     |
 | `4`        | Toggle Ortho  | On/Off        |
+
+LockToggle
+Alt + 1 for lock And unlock the Lock icon in  Inspector  and project 
